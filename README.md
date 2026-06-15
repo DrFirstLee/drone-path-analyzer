@@ -23,7 +23,7 @@ output/
   splited/
     line-1.csv
     curve-2.csv
-    rotate-3.csv
+    circle-3.csv
 ```
 
 You can choose a different output folder or sliding window size:

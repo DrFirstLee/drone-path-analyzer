@@ -16,16 +16,13 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 EARTH_RADIUS_M = 6_371_000.0
-STATE_NAME = {0: "line", 1: "curve", 2: "line", 3: "line", 4: "rotate"}
-STATE_STYLE_NAME = {0: "Line", 1: "Curve", 2: "Rotate_Line", 3: "Rotate_Error", 4: "Figure8"}
-COLORS = [
-    "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
-    "#FF8000", "#0080FF", "#FF0080", "#80FF00", "#00FF80", "#FF4040",
-    "#4040FF", "#FFD700", "#ADFF2F", "#FF69B4", "#1E90FF", "#DC143C",
-    "#8B4513", "#006400", "#4B0082", "#008080", "#D2691E", "#7FFFD4",
-    "#FF1493", "#32CD32", "#00008B", "#B8860B", "#800000", "#9ACD32",
-    "#20B2AA", "#E9967A", "#9400D3", "#FF6600", "#DA70D6", "#2E8B57",
-]
+STATE_NAME = {0: "line", 1: "curve", 2: "line", 3: "line", 4: "circle"}
+STATE_STYLE_NAME = {0: "Line", 1: "Curve", 2: "Line", 3: "Line", 4: "Circle"}
+CLASS_COLORS = {
+    "line": "#1f77b4",
+    "curve": "#ff7f0e",
+    "circle": "#d62728",
+}
 
 
 @dataclass(frozen=True)
@@ -466,7 +463,7 @@ def _write_segment_csvs(original: pd.DataFrame, dataframe: pd.DataFrame, split_d
             continue
         state_final = int(group["State_Final"].iloc[0])
         label = STATE_NAME.get(state_final, f"state{state_final}")
-        color = _segment_color(int(segment_id), state_final)
+        color = _segment_color(state_final)
         segment_export = _build_export_dataframe(original.loc[group.index].copy(), group)
         segment_export["Color"] = color
         segment_path = split_dir / f"{label}-{segment_id}.csv"
@@ -475,16 +472,8 @@ def _write_segment_csvs(original: pd.DataFrame, dataframe: pd.DataFrame, split_d
     return segment_paths
 
 
-def _segment_color(segment_id: int, state_final: int) -> str:
-    if state_final in (0, 1):
-        return COLORS[(segment_id - 1) % len(COLORS)]
-    if state_final == 2:
-        return "#9400D3"
-    if state_final == 3:
-        return "#FF6600"
-    if state_final == 4:
-        return "#DC143C"
-    return "#000000"
+def _segment_color(state_final: int) -> str:
+    return CLASS_COLORS.get(STATE_NAME.get(state_final, "line"), "#000000")
 
 
 def _save_overview_png(dataframe: pd.DataFrame, output_path: Path) -> None:
@@ -496,11 +485,10 @@ def _save_overview_png(dataframe: pd.DataFrame, output_path: Path) -> None:
     for segment_id in sorted_segment_ids:
         group = dataframe[dataframe["Final_Segment_ID"] == segment_id]
         state_final = int(group["State_Final"].iloc[0])
-        color = _segment_color(int(segment_id), state_final)
+        color = _segment_color(state_final)
         line_width, line_style = _line_style(state_final)
         style_name = STATE_STYLE_NAME.get(state_final, f"State{state_final}")
-        label = f"{style_name}-{segment_id}"
-        legend_labels[label] = color
+        legend_labels[style_name] = color
 
         indices = group.index.values
         split_locations = np.where(np.diff(indices) > 1)[0] + 1
@@ -523,7 +511,7 @@ def _save_overview_png(dataframe: pd.DataFrame, output_path: Path) -> None:
     axis.grid(True, alpha=0.2)
     axis.set_aspect("equal", adjustable="datalim")
     _add_color_mapping_text(fig, legend_labels)
-    fig.tight_layout(rect=(0, 0.14, 1, 1))
+    fig.tight_layout(rect=(0, 0.1, 1, 1))
     fig.savefig(output_path, format="png", dpi=140, bbox_inches="tight")
     plt.close(fig)
 
@@ -531,10 +519,6 @@ def _save_overview_png(dataframe: pd.DataFrame, output_path: Path) -> None:
 def _line_style(state_final: int) -> tuple[int, str]:
     if state_final == 1:
         return 3, "--"
-    if state_final == 2:
-        return 3, ":"
-    if state_final == 3:
-        return 3, "-."
     if state_final == 4:
         return 4, "-"
     return 2, "-"
@@ -543,9 +527,7 @@ def _line_style(state_final: int) -> tuple[int, str]:
 def _add_color_mapping_text(fig: plt.Figure, legend_labels: dict[str, str]) -> None:
     if not legend_labels:
         return
-    mapping_lines = [f"{label}: {color}" for label, color in list(legend_labels.items())[:24]]
-    if len(legend_labels) > 24:
-        mapping_lines.append(f"... {len(legend_labels) - 24} more segments")
+    mapping_lines = [f"{label}: {color}" for label, color in legend_labels.items()]
     fig.text(
         0.01,
         0.01,

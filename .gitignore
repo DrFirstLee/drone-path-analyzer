@@ -12,3 +12,6 @@ dist/
 *.egg-info/
 output/
 test_output/
+test_input/
+results/
+results_old/
