@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drone-path-analyzer"
-version = "0.1.0"
+version = "0.1.1"
 description = "Analyze drone GPS path CSV files and export segmented CSV files plus an AI Analyze Overview PNG."
 readme = "README.md"
 requires-python = ">=3.9"

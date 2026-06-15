@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -510,8 +511,8 @@ def _save_overview_png(dataframe: pd.DataFrame, output_path: Path) -> None:
     axis.set_ylabel("Latitude")
     axis.grid(True, alpha=0.2)
     axis.set_aspect("equal", adjustable="datalim")
-    _add_color_mapping_text(fig, legend_labels)
-    fig.tight_layout(rect=(0, 0.1, 1, 1))
+    _add_color_mapping_legend(fig, legend_labels)
+    fig.tight_layout(rect=(0, 0.12, 1, 1))
     fig.savefig(output_path, format="png", dpi=140, bbox_inches="tight")
     plt.close(fig)
 
@@ -524,16 +525,20 @@ def _line_style(state_final: int) -> tuple[int, str]:
     return 2, "-"
 
 
-def _add_color_mapping_text(fig: plt.Figure, legend_labels: dict[str, str]) -> None:
+def _add_color_mapping_legend(fig: plt.Figure, legend_labels: dict[str, str]) -> None:
     if not legend_labels:
         return
-    mapping_lines = [f"{label}: {color}" for label, color in legend_labels.items()]
-    fig.text(
-        0.01,
-        0.01,
-        "Color Mapping for AI\n" + "\n".join(mapping_lines),
-        fontsize=7,
-        family="monospace",
-        va="bottom",
-        bbox={"facecolor": "#f8f8f8", "edgecolor": "#dddddd", "boxstyle": "round,pad=0.4"},
+    handles = [Patch(facecolor=color, edgecolor="#333333", label=label) for label, color in legend_labels.items()]
+    fig.legend(
+        handles=handles,
+        title="Color Mapping for AI",
+        loc="lower left",
+        bbox_to_anchor=(0.01, 0.01),
+        ncol=len(handles),
+        frameon=True,
+        fancybox=True,
+        edgecolor="#dddddd",
+        facecolor="#f8f8f8",
+        fontsize=8,
+        title_fontsize=8,
     )
